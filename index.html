@@ -702,6 +702,7 @@ document.addEventListener('fullscreenchange', () => {
   const btn = document.getElementById('fs-btn');
   btn.textContent = document.fullscreenElement ? '✕' : '⛶';
   btn.title = document.fullscreenElement ? 'Exit Fullscreen' : 'Toggle Fullscreen';
+  setTimeout(scaleApp, 50); // recalculate scale after fullscreen transition
 });
 
 // ── CLOCK ─────────────────────────────────────────────
@@ -735,17 +736,37 @@ function updateMapLabels() {
 function renderNow() {
   const cur  = getCurrent();
   const next = getNext();
+  const now  = nowMin();
+  const firstStart = toMin(SESSIONS[0].startH, SESSIONS[0].startM);
+  const lastEnd    = toMin(SESSIONS[SESSIONS.length - 1].endH, SESSIONS[SESSIONS.length - 1].endM);
   const el   = document.getElementById('now-panel');
   let html   = '';
 
   if (!cur) {
-    const msg = next ? 'Session Break' : 'Conference Complete';
-    const icon = next ? '⏳' : '✅';
-    html = `<div class="break-box">
-      <div class="break-icon">${icon}</div>
-      <div class="break-title">${msg}</div>
-      ${next ? `<div class="break-sub" style="margin-top:8px;">Next: <strong>${next.label}</strong><br>${next.time}</div>` : ''}
-    </div>`;
+    if (now < firstStart) {
+      // Before conference begins
+      html = `<div class="break-box">
+        <div class="break-icon">🗓</div>
+        <div class="break-title">Conference Upcoming</div>
+        <div class="break-sub" style="margin-top:8px;">
+          First session begins at<br><strong>${SESSIONS[0].time || '10:30 AM'}</strong>
+        </div>
+      </div>`;
+    } else if (now >= lastEnd) {
+      // After all sessions done
+      html = `<div class="break-box">
+        <div class="break-icon">✅</div>
+        <div class="break-title">Conference Complete</div>
+        <div class="break-sub" style="margin-top:8px;">Thank you for attending!</div>
+      </div>`;
+    } else if (next) {
+      // Between sessions
+      html = `<div class="break-box">
+        <div class="break-icon">⏳</div>
+        <div class="break-title">Session Break</div>
+        <div class="break-sub" style="margin-top:8px;">Next: <strong>${next.label}</strong><br>${next.time}</div>
+      </div>`;
+    }
     el.innerHTML = html;
     return;
   }
