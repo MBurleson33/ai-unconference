@@ -28,13 +28,20 @@
 }
 
 html, body {
-  width: 1920px; height: 1080px;
+  width: 100vw; height: 100vh;
   overflow: hidden;
-  background: var(--bg);
+  background: #000;
   color: var(--white);
   font-family: 'Barlow', sans-serif;
   user-select: none;
   cursor: default;
+}
+
+#app {
+  width: 1920px; height: 1080px;
+  transform-origin: top left;
+  background: var(--bg);
+  overflow: hidden;
 }
 
 /* ─── HEADER ──────────────────────────────────────── */
@@ -381,6 +388,9 @@ main {
 </head>
 <body>
 
+<!-- APP WRAPPER (scaled to viewport) -->
+<div id="app">
+
 <!-- HEADER -->
 <header>
   <div class="hdr-left">
@@ -598,6 +608,8 @@ main {
   </div>
 </div>
 
+</div><!-- end #app -->
+
 <script>
 // ── DATA ──────────────────────────────────────────────
 const ROOMS = {
@@ -661,6 +673,20 @@ function getNext() {
   return SESSIONS.find(s => toMin(s.startH, s.startM) > m) || null;
 }
 function isPast(s) { return nowMin() >= toMin(s.endH, s.endM); }
+
+// ── VIEWPORT SCALE ────────────────────────────────────
+function scaleApp() {
+  const app = document.getElementById('app');
+  const scaleX = window.innerWidth  / 1920;
+  const scaleY = window.innerHeight / 1080;
+  const scale  = Math.min(scaleX, scaleY);
+  app.style.transform = `scale(${scale})`;
+  // Center if letterboxed
+  app.style.marginLeft = `${(window.innerWidth  - 1920 * scale) / 2}px`;
+  app.style.marginTop  = `${(window.innerHeight - 1080 * scale) / 2}px`;
+}
+scaleApp();
+window.addEventListener('resize', scaleApp);
 
 // ── FULLSCREEN ────────────────────────────────────────
 function toggleFullscreen() {
