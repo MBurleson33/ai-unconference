@@ -676,7 +676,29 @@ function getNext() {
 }
 function isPast(s) { return nowMin() >= toMin(s.endH, s.endM); }
 
-// ── VIEWPORT SCALE ────────────────────────────────────
+// ── CONFERENCE DATE ───────────────────────────────────
+const CONFERENCE_DATE = { year: 2026, month: 5, day: 6 }; // May 6, 2026
+
+function isConferenceDay() {
+  const now = new Date();
+  return now.getFullYear() === CONFERENCE_DATE.year &&
+         now.getMonth() + 1 === CONFERENCE_DATE.month &&
+         now.getDate() === CONFERENCE_DATE.day;
+}
+
+function isBeforeConference() {
+  const now = new Date();
+  const conf = new Date(CONFERENCE_DATE.year, CONFERENCE_DATE.month - 1, CONFERENCE_DATE.day);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return today < conf;
+}
+
+function isAfterConference() {
+  const now = new Date();
+  const conf = new Date(CONFERENCE_DATE.year, CONFERENCE_DATE.month - 1, CONFERENCE_DATE.day);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return today > conf;
+}
 function scaleApp() {
   const app = document.getElementById('app');
   const scaleX = window.innerWidth  / 1920;
@@ -734,13 +756,39 @@ function updateMapLabels() {
 
 // ── NOW PANEL ─────────────────────────────────────────
 function renderNow() {
+  const el = document.getElementById('now-panel');
+  let html = '';
+
+  // Before conference date entirely
+  if (isBeforeConference()) {
+    html = `<div class="break-box">
+      <div class="break-icon">🗓</div>
+      <div class="break-title">Conference Upcoming</div>
+      <div class="break-sub" style="margin-top:8px;">
+        May 6, 2026<br><strong>The National · Oklahoma City</strong>
+      </div>
+    </div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  // After conference date entirely
+  if (isAfterConference()) {
+    html = `<div class="break-box">
+      <div class="break-icon">✅</div>
+      <div class="break-title">Conference Complete</div>
+      <div class="break-sub" style="margin-top:8px;">Thank you for attending!</div>
+    </div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  // It IS conference day — check session times
   const cur  = getCurrent();
   const next = getNext();
   const now  = nowMin();
   const firstStart = toMin(SESSIONS[0].startH, SESSIONS[0].startM);
   const lastEnd    = toMin(SESSIONS[SESSIONS.length - 1].endH, SESSIONS[SESSIONS.length - 1].endM);
-  const el   = document.getElementById('now-panel');
-  let html   = '';
 
   if (!cur) {
     if (now < firstStart) {
