@@ -392,8 +392,21 @@ main {
     <div class="clock-date" id="clock-date">Loading...</div>
   </div>
   <div class="hdr-right">
-    <div class="venue-name">The National · Oklahoma City</div>
-    <div class="venue-sub">Level 2 (Gazelle &amp; Peacock) &nbsp;·&nbsp; Level 4 (Squirrel, Fish &amp; Hound)</div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:14px;">
+      <button id="fs-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen" style="
+        background:rgba(91,200,245,0.08);
+        border:1px solid rgba(91,200,245,0.2);
+        border-radius:8px;
+        color:var(--muted);
+        padding:6px 10px;
+        cursor:pointer;
+        font-size:1rem;
+        line-height:1;
+        transition:background 0.15s,color 0.15s;
+      ">⛶</button>
+    </div>
+    <div class="venue-name" style="margin-top:4px;">The National · Oklahoma City</div>
+    <div class="venue-sub">Level 2 & Level 4</div>
   </div>
 </header>
 
@@ -648,6 +661,20 @@ function getNext() {
   return SESSIONS.find(s => toMin(s.startH, s.startM) > m) || null;
 }
 function isPast(s) { return nowMin() >= toMin(s.endH, s.endM); }
+
+// ── FULLSCREEN ────────────────────────────────────────
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  const btn = document.getElementById('fs-btn');
+  btn.textContent = document.fullscreenElement ? '✕' : '⛶';
+  btn.title = document.fullscreenElement ? 'Exit Fullscreen' : 'Toggle Fullscreen';
+});
 
 // ── CLOCK ─────────────────────────────────────────────
 function updateClock() {
