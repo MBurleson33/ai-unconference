@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, initial-scale=1.0">
+<title>AI Un-Conference · Wayfinding Kiosk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #050e1c;
+  --bg2:      #071527;
+  --bg3:      #0a1e35;
+  --border:   rgba(74,159,212,0.18);
+  --accent:   #5bc8f5;
+  --accent2:  #7edde8;
+  --gold:     #f0c060;
+  --green:    #6de0a0;
+  --white:    #ffffff;
+  --muted:    #5a8aaa;
+  --dim:      #2a4a62;
+  --room-on:  rgba(91,200,245,0.18);
+  --room-glow:rgba(91,200,245,0.55);
+  --room-off: rgba(15,35,55,0.55);
+  --room-off-stroke: rgba(74,159,212,0.12);
+}
+
+html, body {
+  width: 1920px; height: 1080px;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  user-select: none;
+  cursor: default;
+}
+
+/* ─── HEADER ──────────────────────────────────────── */
+header {
+  width: 1920px; height: 78px;
+  background: linear-gradient(90deg, #040c18 0%, #081b30 50%, #040c18 100%);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 0 36px;
+  position: relative;
+}
+header::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.4;
+}
+.hdr-left { display: flex; align-items: center; gap: 20px; }
+.hdr-logo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 2rem; font-weight: 800;
+  color: var(--white); letter-spacing: 0.02em;
+}
+.hdr-logo em { color: var(--accent); font-style: normal; }
+.hdr-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(91,200,245,0.1);
+  border: 1px solid rgba(91,200,245,0.25);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--accent);
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent);
+  animation: blink 1.8s ease-in-out infinite;
+}
+.hdr-center { text-align: center; }
+.clock-time {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 2.6rem; font-weight: 700;
+  color: var(--accent); line-height: 1;
+  letter-spacing: 0.08em;
+}
+.clock-date {
+  font-size: 0.72rem; color: var(--muted);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  margin-top: 1px;
+}
+.hdr-right { text-align: right; }
+.venue-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.08em;
+}
+.venue-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* ─── MAIN ────────────────────────────────────────── */
+main {
+  width: 1920px; height: 1002px;
+  display: flex;
+}
+
+/* ─── LEFT PANEL ──────────────────────────────────── */
+.left-panel {
+  width: 350px; height: 1002px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden; flex-shrink: 0;
+}
+.panel-heading {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.65rem; font-weight: 800;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent);
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.now-inner { flex: 1; overflow-y: auto; scrollbar-width: none; padding-bottom: 10px; }
+.now-inner::-webkit-scrollbar { display: none; }
+
+.now-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.05rem; font-weight: 700;
+  color: var(--white);
+  padding: 14px 20px 2px;
+}
+.now-time {
+  font-size: 0.78rem; color: var(--accent);
+  padding: 0 20px 12px;
+}
+
+.room-row {
+  margin: 5px 12px;
+  padding: 11px 14px;
+  background: rgba(10,28,48,0.7);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.room-row:hover { border-color: var(--accent); background: rgba(91,200,245,0.07); }
+.room-row-top {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.rr-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent);
+}
+.rr-floor {
+  font-size: 0.62rem; color: var(--muted);
+  background: rgba(74,159,212,0.1);
+  border: 1px solid rgba(74,159,212,0.18);
+  border-radius: 10px; padding: 1px 7px;
+}
+.rr-presenter {
+  font-size: 0.9rem; font-weight: 600; color: var(--white);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rr-presenter.empty { color: var(--muted); font-style: italic; font-weight: 400; font-size: 0.82rem; }
+
+.break-box {
+  margin: 16px 12px;
+  padding: 22px 16px;
+  background: rgba(8,20,38,0.8);
+  border: 1px solid rgba(74,159,212,0.12);
+  border-radius: 10px;
+  text-align: center;
+}
+.break-icon { font-size: 2.2rem; margin-bottom: 10px; }
+.break-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.3rem; font-weight: 700;
+  color: var(--white); margin-bottom: 6px;
+}
+.break-sub { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+.break-sub strong { color: var(--accent); }
+
+.keynote-box {
+  margin: 14px 12px;
+  padding: 18px 16px;
+  background: rgba(240,192,96,0.06);
+  border: 1px solid rgba(240,192,96,0.25);
+  border-radius: 10px;
+}
+.keynote-label-sm {
+  font-size: 0.65rem; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 6px;
+}
+.keynote-name { font-size: 1rem; font-weight: 700; color: var(--white); }
+.keynote-org { font-size: 0.8rem; color: var(--muted); }
+
+/* ─── CENTER PANEL ────────────────────────────────── */
+.center-panel {
+  flex: 1;
+  height: 1002px;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.floor-tabs {
+  display: flex;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.floor-tab {
+  flex: 1; padding: 15px 20px;
+  text-align: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.95rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.floor-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.floor-tab:hover:not(.active) { color: var(--white); }
+
+.map-wrap {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px 20px 12px;
+  position: relative;
+}
+.floor-svg { display: none; width: 100%; height: 100%; }
+.floor-svg.active { display: block; }
+
+/* SVG room interactivity */
+.room-tappable { cursor: pointer; }
+.room-tappable:active rect, .room-tappable:active polygon { opacity: 0.8; }
+@keyframes roomGlow {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.72; }
+}
+.room-glow { animation: roomGlow 2.8s ease-in-out infinite; }
+
+.map-legend {
+  position: absolute; bottom: 14px; left: 28px;
+  display: flex; gap: 18px;
+}
+.leg-item { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; color: var(--muted); letter-spacing: 0.05em; }
+.leg-swatch { width: 12px; height: 12px; border-radius: 3px; }
+.leg-swatch.on  { background: rgba(91,200,245,0.3); border: 1px solid var(--accent); }
+.leg-swatch.off { background: var(--room-off); border: 1px solid var(--room-off-stroke); }
+
+/* ─── RIGHT PANEL ──────────────────────────────────── */
+.right-panel {
+  width: 420px; height: 1002px;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden; flex-shrink: 0;
+}
+.sched-scroll {
+  flex: 1; overflow-y: auto; scrollbar-width: none;
+}
+.sched-scroll::-webkit-scrollbar { display: none; }
+
+.sched-block {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.sched-block.current {
+  background: rgba(91,200,245,0.06);
+  border-left: 3px solid var(--accent);
+  padding-left: 15px;
+}
+.sched-block.past { opacity: 0.38; }
+
+.sb-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 8px;
+}
+.sb-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.78rem; font-weight: 800;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent);
+}
+.sb-label.gold { color: var(--gold); }
+.sb-label.green { color: var(--green); }
+.sb-time { font-size: 0.7rem; color: var(--muted); }
+
+.sb-rooms {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.sb-room {
+  background: rgba(10,25,42,0.7);
+  border: 1px solid rgba(74,159,212,0.1);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+.sb-room.cur { border-color: rgba(91,200,245,0.35); background: rgba(91,200,245,0.07); }
+.sb-rname {
+  font-size: 0.6rem; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--accent); opacity: 0.7;
+}
+.sb-presenter {
+  font-size: 0.76rem; font-weight: 500; color: var(--white);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sb-presenter.dim { color: var(--muted); font-style: italic; }
+.sb-keynote-name { font-size: 0.9rem; font-weight: 600; color: var(--white); }
+.sb-keynote-org  { font-size: 0.75rem; color: var(--muted); }
+.sb-lunch-note   { font-size: 0.78rem; color: var(--green); }
+
+/* ─── ROOM POPUP ──────────────────────────────────── */
+.popup-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(3,9,20,0.78);
+  z-index: 200;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.popup-backdrop.open { display: flex; }
+.popup-card {
+  background: linear-gradient(145deg, #0c2038 0%, #071627 100%);
+  border: 1px solid var(--accent);
+  border-radius: 18px;
+  padding: 44px 44px 36px;
+  min-width: 560px; max-width: 640px;
+  position: relative;
+  box-shadow: 0 0 80px rgba(91,200,245,0.18), 0 30px 60px rgba(0,0,0,0.6);
+  animation: popIn 0.2s ease;
+}
+@keyframes popIn { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }
+.popup-close {
+  position: absolute; top: 18px; right: 22px;
+  font-size: 2rem; line-height: 1;
+  color: var(--muted); background: none; border: none; cursor: pointer;
+}
+.popup-close:hover { color: var(--white); }
+.popup-room {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 2.4rem; font-weight: 800; color: var(--white);
+  letter-spacing: 0.03em; margin-bottom: 4px;
+}
+.popup-floor-label { font-size: 0.82rem; color: var(--accent); letter-spacing: 0.08em; margin-bottom: 28px; }
+.popup-sec-label {
+  font-size: 0.65rem; font-weight: 800;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.popup-session-list { display: flex; flex-direction: column; gap: 7px; }
+.popup-sess-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 14px;
+  background: rgba(10,28,50,0.7);
+  border: 1px solid rgba(74,159,212,0.12);
+  border-radius: 9px;
+}
+.popup-sess-row.cur {
+  background: rgba(91,200,245,0.1);
+  border-color: var(--accent);
+}
+.popup-sess-row.past { opacity: 0.38; }
+.psr-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--accent); min-width: 72px;
+}
+.psr-time { font-size: 0.68rem; color: var(--muted); min-width: 108px; }
+.psr-presenter { font-size: 0.9rem; font-weight: 600; color: var(--white); }
+.psr-presenter.dim { color: var(--muted); font-style: italic; font-weight: 400; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-left">
+    <div class="hdr-logo">AI <em>Un-Conference</em></div>
+    <div class="hdr-badge"><span class="live-dot"></span>Live Wayfinding</div>
+  </div>
+  <div class="hdr-center">
+    <div class="clock-time" id="clock-time">--:-- --</div>
+    <div class="clock-date" id="clock-date">Loading...</div>
+  </div>
+  <div class="hdr-right">
+    <div class="venue-name">The National · Oklahoma City</div>
+    <div class="venue-sub">Level 2 (Gazelle &amp; Peacock) &nbsp;·&nbsp; Level 4 (Squirrel, Fish &amp; Hound)</div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- ── LEFT: NOW PANEL ── -->
+  <div class="left-panel">
+    <div class="panel-heading">🏛 Happening Now</div>
+    <div class="now-inner" id="now-panel"></div>
+  </div>
+
+  <!-- ── CENTER: MAP ── -->
+  <div class="center-panel">
+    <div class="floor-tabs">
+      <div class="floor-tab active" data-floor="2" onclick="switchFloor(2)">
+        ▲ &nbsp;Level 2 &nbsp;·&nbsp; Gazelle &amp; Peacock Ballrooms
+      </div>
+      <div class="floor-tab" data-floor="4" onclick="switchFloor(4)">
+        ▲ &nbsp;Level 4 &nbsp;·&nbsp; Squirrel, Fish &amp; Hound Rooms
+      </div>
+    </div>
+
+    <div class="map-wrap">
+
+      <!-- ── LEVEL 2 MAP ── -->
+      <svg class="floor-svg active" id="map-2" viewBox="0 0 680 900" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <filter id="glow2">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Building shell -->
+        <rect x="10" y="10" width="660" height="880" rx="6" fill="rgba(8,18,34,0.6)" stroke="rgba(74,159,212,0.18)" stroke-width="2"/>
+
+        <!-- Left Prefunction top -->
+        <rect x="18" y="18" width="88" height="432" rx="4" fill="rgba(12,24,44,0.8)" stroke="rgba(74,159,212,0.1)" stroke-width="1.5"/>
+        <text transform="translate(62,230) rotate(-90)" text-anchor="middle" font-family="Barlow Condensed" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(90,138,170,0.5)">PREFUNCTION</text>
+
+        <!-- Left Prefunction bottom -->
+        <rect x="18" y="462" width="88" height="428" rx="4" fill="rgba(12,24,44,0.8)" stroke="rgba(74,159,212,0.1)" stroke-width="1.5"/>
+        <text transform="translate(62,676) rotate(-90)" text-anchor="middle" font-family="Barlow Condensed" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(90,138,170,0.5)">PREFUNCTION</text>
+
+        <!-- Corridor wall divider -->
+        <rect x="106" y="10" width="14" height="880" fill="rgba(8,18,34,0.9)" stroke="rgba(74,159,212,0.1)" stroke-width="1"/>
+
+        <!-- Center divider between rooms -->
+        <line x1="120" y1="450" x2="662" y2="450" stroke="rgba(74,159,212,0.18)" stroke-width="2" stroke-dasharray="8,5"/>
+
+        <!-- ── GAZELLE BALLROOM ── -->
+        <g class="room-tappable" onclick="showRoom('Gazelle',2)">
+          <rect x="120" y="18" width="548" height="428" rx="5" fill="var(--room-on)" stroke="var(--accent)" stroke-width="2.5" filter="url(#glow2)" class="room-glow"/>
+          <!-- Inner highlight -->
+          <rect x="126" y="24" width="536" height="8" rx="3" fill="rgba(91,200,245,0.12)"/>
+          <!-- Room name -->
+          <text x="394" y="195" text-anchor="middle" font-family="Barlow Condensed" font-size="42" font-weight="800" fill="white" letter-spacing="3">GAZELLE</text>
+          <text x="394" y="240" text-anchor="middle" font-family="Barlow Condensed" font-size="22" font-weight="600" fill="var(--accent2)" letter-spacing="4">BALLROOM</text>
+          <!-- Level pill -->
+          <rect x="314" y="264" width="160" height="30" rx="15" fill="rgba(91,200,245,0.12)" stroke="rgba(91,200,245,0.3)" stroke-width="1"/>
+          <text x="394" y="284" text-anchor="middle" font-family="Barlow Condensed" font-size="14" font-weight="700" fill="var(--accent)" letter-spacing="3">LEVEL 2</text>
+          <!-- Tap hint -->
+          <text x="394" y="345" text-anchor="middle" font-family="Barlow" font-size="13" fill="rgba(91,200,245,0.4)" letter-spacing="1">TAP FOR SESSION DETAILS</text>
+          <!-- Presenter line (dynamic) -->
+          <text x="394" y="390" text-anchor="middle" font-family="Barlow Condensed" font-size="20" font-weight="600" fill="rgba(255,255,255,0.7)" id="map2-gazelle-presenter" letter-spacing="1"></text>
+        </g>
+
+        <!-- ── PEACOCK BALLROOM ── -->
+        <g class="room-tappable" onclick="showRoom('Peacock',2)">
+          <rect x="120" y="458" width="548" height="432" rx="5" fill="var(--room-on)" stroke="var(--accent)" stroke-width="2.5" filter="url(#glow2)" class="room-glow"/>
+          <rect x="126" y="464" width="536" height="8" rx="3" fill="rgba(91,200,245,0.12)"/>
+          <text x="394" y="635" text-anchor="middle" font-family="Barlow Condensed" font-size="42" font-weight="800" fill="white" letter-spacing="3">PEACOCK</text>
+          <text x="394" y="680" text-anchor="middle" font-family="Barlow Condensed" font-size="22" font-weight="600" fill="var(--accent2)" letter-spacing="4">BALLROOM</text>
+          <rect x="314" y="704" width="160" height="30" rx="15" fill="rgba(91,200,245,0.12)" stroke="rgba(91,200,245,0.3)" stroke-width="1"/>
+          <text x="394" y="724" text-anchor="middle" font-family="Barlow Condensed" font-size="14" font-weight="700" fill="var(--accent)" letter-spacing="3">LEVEL 2</text>
+          <text x="394" y="785" text-anchor="middle" font-family="Barlow" font-size="13" fill="rgba(91,200,245,0.4)" letter-spacing="1">TAP FOR SESSION DETAILS</text>
+          <text x="394" y="830" text-anchor="middle" font-family="Barlow Condensed" font-size="20" font-weight="600" fill="rgba(255,255,255,0.7)" id="map2-peacock-presenter" letter-spacing="1"></text>
+        </g>
+
+        <!-- Floor label -->
+        <text x="655" y="895" text-anchor="end" font-family="Barlow Condensed" font-size="11" fill="rgba(74,159,212,0.25)" letter-spacing="1">THE NATIONAL · SECOND FLOOR</text>
+      </svg>
+
+      <!-- ── LEVEL 4 MAP ── -->
+      <svg class="floor-svg" id="map-4" viewBox="0 0 1020 780" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <filter id="glow4">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Building: top strip full width -->
+        <rect x="10" y="10" width="1000" height="248" rx="6" fill="rgba(8,18,34,0.55)" stroke="rgba(74,159,212,0.16)" stroke-width="2"/>
+        <!-- Building: left lower leg -->
+        <rect x="10" y="252" width="272" height="518" rx="6" fill="rgba(8,18,34,0.55)" stroke="rgba(74,159,212,0.16)" stroke-width="2"/>
+        <!-- Building: right lower (large hall) -->
+        <rect x="278" y="252" width="732" height="518" rx="6" fill="rgba(6,14,28,0.55)" stroke="rgba(74,159,212,0.09)" stroke-width="1.5"/>
+
+        <!-- Large hall label -->
+        <text x="644" y="490" text-anchor="middle" font-family="Barlow Condensed" font-size="32" font-weight="800" fill="rgba(74,159,212,0.08)" letter-spacing="5">PRE-FUNCTION</text>
+        <text x="644" y="530" text-anchor="middle" font-family="Barlow Condensed" font-size="18" fill="rgba(74,159,212,0.06)" letter-spacing="4">BALLROOM AREA</text>
+
+        <!-- ── EAGLE BOARDROOM (not ours) ── -->
+        <rect x="18" y="18" width="132" height="158" rx="4" fill="var(--room-off)" stroke="var(--room-off-stroke)" stroke-width="1.5"/>
+        <text transform="translate(84,98) rotate(-90)" text-anchor="middle" font-family="Barlow Condensed" font-size="11" font-weight="600" letter-spacing="1" fill="rgba(74,159,212,0.28)">EAGLE</text>
+
+        <!-- Corridor / stair area top-left between Eagle and Fish -->
+        <rect x="152" y="18" width="78" height="240" rx="3" fill="rgba(6,14,28,0.7)" stroke="rgba(74,159,212,0.06)" stroke-width="1"/>
+        <text transform="translate(191,138) rotate(-90)" text-anchor="middle" font-family="Barlow Condensed" font-size="10" fill="rgba(74,159,212,0.2)" letter-spacing="1">STAIRS</text>
+
+        <!-- ── FISH ROOM ── conference room -->
+        <g class="room-tappable" onclick="showRoom('Fish',4)">
+          <rect x="232" y="18" width="196" height="218" rx="4" fill="var(--room-on)" stroke="var(--accent)" stroke-width="2.5" filter="url(#glow4)" class="room-glow"/>
+          <rect x="238" y="24" width="184" height="7" rx="3" fill="rgba(91,200,245,0.12)"/>
+          <text x="330" y="118" text-anchor="middle" font-family="Barlow Condensed" font-size="30" font-weight="800" fill="white" letter-spacing="2">FISH</text>
+          <text x="330" y="148" text-anchor="middle" font-family="Barlow Condensed" font-size="16" font-weight="600" fill="var(--accent2)" letter-spacing="3">ROOM</text>
+          <rect x="265" y="165" width="130" height="26" rx="13" fill="rgba(91,200,245,0.1)" stroke="rgba(91,200,245,0.25)" stroke-width="1"/>
+          <text x="330" y="183" text-anchor="middle" font-family="Barlow Condensed" font-size="12" font-weight="700" fill="var(--accent)" letter-spacing="2">LEVEL 4</text>
+          <text x="330" y="215" text-anchor="middle" font-family="Barlow Condensed" font-size="16" font-weight="600" fill="rgba(255,255,255,0.65)" id="map4-fish-presenter" letter-spacing="1"></text>
+        </g>
+
+        <!-- Gap between Fish and Hound -->
+        <rect x="430" y="18" width="62" height="240" rx="3" fill="rgba(6,14,28,0.6)" stroke="rgba(74,159,212,0.06)" stroke-width="1"/>
+
+        <!-- ── HOUND ROOM ── conference room (larger) -->
+        <g class="room-tappable" onclick="showRoom('Hound',4)">
+          <rect x="494" y="18" width="300" height="230" rx="4" fill="var(--room-on)" stroke="var(--accent)" stroke-width="2.5" filter="url(#glow4)" class="room-glow"/>
+          <rect x="500" y="24" width="288" height="7" rx="3" fill="rgba(91,200,245,0.12)"/>
+          <text x="644" y="122" text-anchor="middle" font-family="Barlow Condensed" font-size="30" font-weight="800" fill="white" letter-spacing="2">HOUND</text>
+          <text x="644" y="152" text-anchor="middle" font-family="Barlow Condensed" font-size="16" font-weight="600" fill="var(--accent2)" letter-spacing="3">ROOM</text>
+          <rect x="579" y="170" width="130" height="26" rx="13" fill="rgba(91,200,245,0.1)" stroke="rgba(91,200,245,0.25)" stroke-width="1"/>
+          <text x="644" y="188" text-anchor="middle" font-family="Barlow Condensed" font-size="12" font-weight="700" fill="var(--accent)" letter-spacing="2">LEVEL 4</text>
+          <text x="644" y="225" text-anchor="middle" font-family="Barlow Condensed" font-size="16" font-weight="600" fill="rgba(255,255,255,0.65)" id="map4-hound-presenter" letter-spacing="1"></text>
+        </g>
+
+        <!-- ── OWL ROOM (not ours) ── -->
+        <rect x="800" y="18" width="202" height="168" rx="4" fill="var(--room-off)" stroke="var(--room-off-stroke)" stroke-width="1.5"/>
+        <text x="901" y="105" text-anchor="middle" font-family="Barlow Condensed" font-size="14" font-weight="600" fill="rgba(74,159,212,0.28)" letter-spacing="1">OWL ROOM</text>
+
+        <!-- Connector line -->
+        <line x1="10" y1="258" x2="1010" y2="258" stroke="rgba(74,159,212,0.1)" stroke-width="1" stroke-dasharray="6,5"/>
+
+        <!-- ── SQUIRREL ROOM ── conference room, left lower -->
+        <g class="room-tappable" onclick="showRoom('Squirrel',4)">
+          <rect x="18" y="268" width="248" height="348" rx="4" fill="var(--room-on)" stroke="var(--accent)" stroke-width="2.5" filter="url(#glow4)" class="room-glow"/>
+          <rect x="24" y="274" width="236" height="7" rx="3" fill="rgba(91,200,245,0.12)"/>
+          <text x="142" y="432" text-anchor="middle" font-family="Barlow Condensed" font-size="28" font-weight="800" fill="white" letter-spacing="2">SQUIRREL</text>
+          <text x="142" y="462" text-anchor="middle" font-family="Barlow Condensed" font-size="16" font-weight="600" fill="var(--accent2)" letter-spacing="3">ROOM</text>
+          <rect x="77" y="480" width="130" height="26" rx="13" fill="rgba(91,200,245,0.1)" stroke="rgba(91,200,245,0.25)" stroke-width="1"/>
+          <text x="142" y="498" text-anchor="middle" font-family="Barlow Condensed" font-size="12" font-weight="700" fill="var(--accent)" letter-spacing="2">LEVEL 4</text>
+          <text x="142" y="535" text-anchor="middle" font-family="Barlow Condensed" font-size="15" font-weight="600" fill="rgba(255,255,255,0.65)" id="map4-squirrel-presenter" letter-spacing="1"></text>
+        </g>
+
+        <!-- Elevator area -->
+        <rect x="18" y="624" width="248" height="140" rx="4" fill="rgba(8,16,32,0.7)" stroke="rgba(74,159,212,0.08)" stroke-width="1.5"/>
+        <text x="142" y="698" text-anchor="middle" font-family="Barlow Condensed" font-size="15" fill="rgba(74,159,212,0.3)" letter-spacing="1">🛗  ELEVATORS</text>
+        <text x="142" y="720" text-anchor="middle" font-family="Barlow Condensed" font-size="12" fill="rgba(74,159,212,0.18)" letter-spacing="1">STAIRS ↕</text>
+
+        <!-- Floor label -->
+        <text x="1005" y="770" text-anchor="end" font-family="Barlow Condensed" font-size="11" fill="rgba(74,159,212,0.22)" letter-spacing="1">THE NATIONAL · FOURTH FLOOR</text>
+      </svg>
+
+      <!-- Legend -->
+      <div class="map-legend">
+        <div class="leg-item"><div class="leg-swatch on"></div>Conference Room (tap for details)</div>
+        <div class="leg-item"><div class="leg-swatch off"></div>Other Space</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: SCHEDULE PANEL ── -->
+  <div class="right-panel">
+    <div class="panel-heading">📅 Today's Schedule</div>
+    <div class="sched-scroll" id="sched-panel"></div>
+  </div>
+
+</main>
+
+<!-- ── ROOM DETAIL POPUP ── -->
+<div class="popup-backdrop" id="popup" onclick="handleBackdropClick(event)">
+  <div class="popup-card">
+    <button class="popup-close" onclick="closePopup()">×</button>
+    <div class="popup-room"  id="pp-room"></div>
+    <div class="popup-floor-label" id="pp-floor"></div>
+    <div class="popup-sec-label">FULL DAY SCHEDULE</div>
+    <div class="popup-session-list" id="pp-sessions"></div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const ROOMS = {
+  Gazelle:  { floor: 2, label: "Gazelle Ballroom",  svgId: "map2-gazelle-presenter"  },
+  Peacock:  { floor: 2, label: "Peacock Ballroom",  svgId: "map2-peacock-presenter"  },
+  Squirrel: { floor: 4, label: "Squirrel Room",     svgId: "map4-squirrel-presenter" },
+  Fish:     { floor: 4, label: "Fish Room",         svgId: "map4-fish-presenter"     },
+  Hound:    { floor: 4, label: "Hound Room",        svgId: "map4-hound-presenter"    },
+};
+
+const SESSIONS = [
+  {
+    id: "keynote", label: "Keynote", time: "Morning Session",
+    startH: 8, startM: 0, endH: 10, endM: 25, type: "keynote",
+    keynote: { presenter: "Michael Sherwood", org: "NVIDIA" }
+  },
+  {
+    id: "s1", label: "Session 1", time: "10:30 – 11:15 AM",
+    startH: 10, startM: 30, endH: 11, endM: 15, type: "session",
+    rooms: { Gazelle:"WhitegloveAI", Peacock:"GFOA", Squirrel:"Polimorphic", Fish:"City Detect", Hound:"Creatio" }
+  },
+  {
+    id: "s2", label: "Session 2", time: "11:30 AM – 12:15 PM",
+    startH: 11, startM: 30, endH: 12, endM: 15, type: "session",
+    rooms: { Gazelle:"Ipsotek", Peacock:"Madison AI", Squirrel:"CityFront", Fish:"Ticon", Hound:"Darwin AI" }
+  },
+  {
+    id: "lunch", label: "Lunch", time: "12:15 – 1:15 PM",
+    startH: 12, startM: 15, endH: 13, endM: 15, type: "lunch",
+    note: "Civic Marketplace presenting in Fish & Hound"
+  },
+  {
+    id: "s3", label: "Session 3", time: "1:15 – 2:00 PM",
+    startH: 13, startM: 15, endH: 14, endM: 0, type: "session",
+    rooms: { Gazelle:"Arterial", Peacock:"Envisio", Squirrel:"Granicus", Fish:"—", Hound:"RVRWRK" }
+  },
+  {
+    id: "s4", label: "Session 4", time: "2:15 – 3:00 PM",
+    startH: 14, startM: 15, endH: 15, endM: 0, type: "session",
+    rooms: { Gazelle:"Vaidio", Peacock:"ThirdLine", Squirrel:"Resonus", Fish:"AFI – Part 1", Hound:"Prophecy Gov" }
+  },
+  {
+    id: "s5", label: "Session 5", time: "3:15 – 4:00 PM",
+    startH: 15, startM: 15, endH: 16, endM: 0, type: "session",
+    rooms: { Gazelle:"MinutesGenerator", Peacock:"FlashVote", Squirrel:"Citibot", Fish:"AFI – Part 2", Hound:"—" }
+  }
+];
+
+// ── TIME HELPERS ──────────────────────────────────────
+function nowMin() {
+  const n = new Date();
+  return n.getHours() * 60 + n.getMinutes();
+}
+function toMin(h, m) { return h * 60 + m; }
+function getCurrent() {
+  const m = nowMin();
+  return SESSIONS.find(s => m >= toMin(s.startH, s.startM) && m < toMin(s.endH, s.endM)) || null;
+}
+function getNext() {
+  const m = nowMin();
+  return SESSIONS.find(s => toMin(s.startH, s.startM) > m) || null;
+}
+function isPast(s) { return nowMin() >= toMin(s.endH, s.endM); }
+
+// ── CLOCK ─────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours(), m = String(now.getMinutes()).padStart(2,'0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  document.getElementById('clock-time').textContent = `${h % 12 || 12}:${m} ${ampm}`;
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('clock-date').textContent =
+    `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+}
+
+// ── MAP LABELS ────────────────────────────────────────
+function updateMapLabels() {
+  const cur = getCurrent();
+  for (const [rName, rData] of Object.entries(ROOMS)) {
+    const el = document.getElementById(rData.svgId);
+    if (!el) continue;
+    if (cur && cur.type === 'session' && cur.rooms[rName]) {
+      const p = cur.rooms[rName];
+      el.textContent = p === '—' ? '' : p;
+    } else {
+      el.textContent = '';
+    }
+  }
+}
+
+// ── NOW PANEL ─────────────────────────────────────────
+function renderNow() {
+  const cur  = getCurrent();
+  const next = getNext();
+  const el   = document.getElementById('now-panel');
+  let html   = '';
+
+  if (!cur) {
+    const msg = next ? 'Session Break' : 'Conference Complete';
+    const icon = next ? '⏳' : '✅';
+    html = `<div class="break-box">
+      <div class="break-icon">${icon}</div>
+      <div class="break-title">${msg}</div>
+      ${next ? `<div class="break-sub" style="margin-top:8px;">Next: <strong>${next.label}</strong><br>${next.time}</div>` : ''}
+    </div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  if (cur.type === 'keynote') {
+    html = `<div class="keynote-box" style="margin:14px 12px;">
+      <div class="keynote-label-sm">🎤 KEYNOTE</div>
+      <div class="keynote-name">${cur.keynote.presenter}</div>
+      <div class="keynote-org">${cur.keynote.org}</div>
+    </div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  if (cur.type === 'lunch') {
+    html = `<div class="break-box">
+      <div class="break-icon">🍽</div>
+      <div class="break-title">Lunch Break</div>
+      <div class="break-sub" style="margin-top:8px;">${cur.time}<br><br>
+        <strong>Civic Marketplace</strong><br>presenting in Fish &amp; Hound rooms
+      </div>
+    </div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  html += `<div class="now-label">${cur.label}</div>
+           <div class="now-time">${cur.time}</div>`;
+
+  for (const rName of ['Gazelle','Peacock','Squirrel','Fish','Hound']) {
+    const presenter = cur.rooms[rName] || '—';
+    const empty = presenter === '—';
+    html += `<div class="room-row" onclick="showRoom('${rName}',${ROOMS[rName].floor})">
+      <div class="room-row-top">
+        <span class="rr-name">${rName}</span>
+        <span class="rr-floor">L${ROOMS[rName].floor}</span>
+      </div>
+      <div class="rr-presenter ${empty?'empty':''}">${empty ? 'No session' : presenter}</div>
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ── SCHEDULE PANEL ────────────────────────────────────
+function renderSchedule() {
+  const cur = getCurrent();
+  const el  = document.getElementById('sched-panel');
+  let html  = '';
+
+  for (const s of SESSIONS) {
+    const isCur  = cur && cur.id === s.id;
+    const past   = isPast(s) && !isCur;
+
+    html += `<div class="sched-block ${isCur?'current':''} ${past?'past':''}">
+      <div class="sb-header">
+        <span class="sb-label ${s.type==='keynote'?'gold':''} ${s.type==='lunch'?'green':''}">${s.type==='keynote'?'🎤 ':''}${s.label}</span>
+        <span class="sb-time">${s.time}</span>
+      </div>`;
+
+    if (s.type === 'keynote') {
+      html += `<div class="sb-keynote-name">${s.keynote.presenter}</div>
+               <div class="sb-keynote-org">${s.keynote.org}</div>`;
+    } else if (s.type === 'lunch') {
+      html += `<div class="sb-lunch-note">🍽 Civic Marketplace · Fish &amp; Hound</div>`;
+    } else {
+      html += `<div class="sb-rooms">`;
+      for (const [rName, presenter] of Object.entries(s.rooms)) {
+        const dim = presenter === '—';
+        html += `<div class="sb-room ${isCur?'cur':''}">
+          <div class="sb-rname">${rName}</div>
+          <div class="sb-presenter ${dim?'dim':''}">${presenter}</div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+
+  el.innerHTML = html;
+
+  // Scroll current into view
+  const curEl = el.querySelector('.sched-block.current');
+  if (curEl) curEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── FLOOR SWITCHER ────────────────────────────────────
+function switchFloor(f) {
+  document.querySelectorAll('.floor-tab').forEach(t =>
+    t.classList.toggle('active', parseInt(t.dataset.floor) === f));
+  document.getElementById('map-2').classList.toggle('active', f === 2);
+  document.getElementById('map-4').classList.toggle('active', f === 4);
+}
+
+// ── ROOM POPUP ────────────────────────────────────────
+function showRoom(name, floor) {
+  document.getElementById('pp-room').textContent  = ROOMS[name].label;
+  document.getElementById('pp-floor').textContent = `Level ${floor} · The National, Oklahoma City`;
+
+  const cur = getCurrent();
+  const sessionRows = SESSIONS.filter(s => s.type === 'session');
+  let html = '';
+
+  for (const s of sessionRows) {
+    const presenter = s.rooms[name] || '—';
+    const isCur     = cur && cur.id === s.id;
+    const past      = isPast(s) && !isCur;
+    const dim       = presenter === '—';
+    html += `<div class="popup-sess-row ${isCur?'cur':''} ${past&&!isCur?'past':''}">
+      <span class="psr-label">${s.label}</span>
+      <span class="psr-time">${s.time}</span>
+      <span class="psr-presenter ${dim?'dim':''}">${presenter}</span>
+    </div>`;
+  }
+
+  document.getElementById('pp-sessions').innerHTML = html;
+  document.getElementById('popup').classList.add('open');
+  switchFloor(floor);
+}
+
+function closePopup() {
+  document.getElementById('popup').classList.remove('open');
+}
+function handleBackdropClick(e) {
+  if (e.target === document.getElementById('popup')) closePopup();
+}
+
+// ── REFRESH ───────────────────────────────────────────
+function refresh() {
+  renderNow();
+  renderSchedule();
+  updateMapLabels();
+}
+
+updateClock();
+setInterval(updateClock, 1000);
+refresh();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>
