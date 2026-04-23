@@ -641,7 +641,7 @@ const SESSIONS = [
   {
     id: "lunch", label: "Lunch", time: "12:15 – 1:15 PM",
     startH: 12, startM: 15, endH: 13, endM: 15, type: "lunch",
-    note: "Civic Marketplace presenting in Fish & Hound"
+    note: "Civic Marketplace presenting in the Main Ballroom (Gazelle + Peacock combined)"
   },
   {
     id: "s3", label: "Session 3", time: "1:15 – 2:00 PM",
@@ -834,7 +834,7 @@ function renderNow() {
       <div class="break-icon">🍽</div>
       <div class="break-title">Lunch Break</div>
       <div class="break-sub" style="margin-top:8px;">${cur.time}<br><br>
-        <strong>Civic Marketplace</strong><br>presenting in Fish &amp; Hound rooms
+        <strong>Civic Marketplace</strong><br>presenting in the<br>Main Ballroom
       </div>
     </div>`;
     el.innerHTML = html;
@@ -879,7 +879,7 @@ function renderSchedule() {
       html += `<div class="sb-keynote-name">${s.keynote.presenter}</div>
                <div class="sb-keynote-org">${s.keynote.org}</div>`;
     } else if (s.type === 'lunch') {
-      html += `<div class="sb-lunch-note">🍽 Civic Marketplace · Fish &amp; Hound</div>`;
+      html += `<div class="sb-lunch-note">🍽 Civic Marketplace · Main Ballroom</div>`;
     } else {
       html += `<div class="sb-rooms">`;
       for (const [rName, presenter] of Object.entries(s.rooms)) {
@@ -942,11 +942,89 @@ function handleBackdropClick(e) {
   if (e.target === document.getElementById('popup')) closePopup();
 }
 
+// ── LEVEL 2 MAP: COMBINE ROOMS DURING LUNCH ──────────
+function updateLevel2Map() {
+  const cur = getCurrent();
+  const isLunch = isConferenceDay() && cur && cur.type === 'lunch';
+  const svg = document.getElementById('map-2');
+  if (!svg) return;
+
+  // Remove any previous dynamic overlay
+  const old = svg.querySelector('#lunch-overlay');
+  if (old) old.remove();
+
+  if (isLunch) {
+    // Draw a combined "Main Ballroom" overlay over both rooms
+    const ns = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(ns, 'g');
+    g.id = 'lunch-overlay';
+
+    // Big combined rect covering both ballroom slots
+    const rect = document.createElementNS(ns, 'rect');
+    rect.setAttribute('x', '120'); rect.setAttribute('y', '18');
+    rect.setAttribute('width', '548'); rect.setAttribute('height', '942');
+    rect.setAttribute('rx', '5');
+    rect.setAttribute('fill', 'rgba(91,200,245,0.13)');
+    rect.setAttribute('stroke', '#5bc8f5'); rect.setAttribute('stroke-width', '2.5');
+    g.appendChild(rect);
+
+    // Top highlight strip
+    const strip = document.createElementNS(ns, 'rect');
+    strip.setAttribute('x', '126'); strip.setAttribute('y', '24');
+    strip.setAttribute('width', '536'); strip.setAttribute('height', '8');
+    strip.setAttribute('rx', '3'); strip.setAttribute('fill', 'rgba(91,200,245,0.12)');
+    g.appendChild(strip);
+
+    // "MAIN BALLROOM" label
+    const t1 = document.createElementNS(ns, 'text');
+    t1.setAttribute('x', '394'); t1.setAttribute('y', '390');
+    t1.setAttribute('text-anchor', 'middle');
+    t1.setAttribute('font-family', 'Barlow Condensed');
+    t1.setAttribute('font-size', '48'); t1.setAttribute('font-weight', '800');
+    t1.setAttribute('fill', 'white'); t1.setAttribute('letter-spacing', '3');
+    t1.textContent = 'MAIN';
+    g.appendChild(t1);
+
+    const t2 = document.createElementNS(ns, 'text');
+    t2.setAttribute('x', '394'); t2.setAttribute('y', '450');
+    t2.setAttribute('text-anchor', 'middle');
+    t2.setAttribute('font-family', 'Barlow Condensed');
+    t2.setAttribute('font-size', '48'); t2.setAttribute('font-weight', '800');
+    t2.setAttribute('fill', 'white'); t2.setAttribute('letter-spacing', '3');
+    t2.textContent = 'BALLROOM';
+    g.appendChild(t2);
+
+    const t3 = document.createElementNS(ns, 'text');
+    t3.setAttribute('x', '394'); t3.setAttribute('y', '510');
+    t3.setAttribute('text-anchor', 'middle');
+    t3.setAttribute('font-family', 'Barlow Condensed');
+    t3.setAttribute('font-size', '22'); t3.setAttribute('font-weight', '600');
+    t3.setAttribute('fill', '#7edde8'); t3.setAttribute('letter-spacing', '4');
+    t3.textContent = 'LEVEL 2';
+    g.appendChild(t3);
+
+    // Civic Marketplace label
+    const t4 = document.createElementNS(ns, 'text');
+    t4.setAttribute('x', '394'); t4.setAttribute('y', '580');
+    t4.setAttribute('text-anchor', 'middle');
+    t4.setAttribute('font-family', 'Barlow Condensed');
+    t4.setAttribute('font-size', '24'); t4.setAttribute('font-weight', '600');
+    t4.setAttribute('fill', 'rgba(255,255,255,0.65)'); t4.setAttribute('letter-spacing', '1');
+    t4.textContent = 'Civic Marketplace · Lunch Session';
+    g.appendChild(t4);
+
+    svg.appendChild(g);
+    // Switch to Level 2 map automatically
+    switchFloor(2);
+  }
+}
+
 // ── REFRESH ───────────────────────────────────────────
 function refresh() {
   renderNow();
   renderSchedule();
   updateMapLabels();
+  updateLevel2Map();
 }
 
 updateClock();
